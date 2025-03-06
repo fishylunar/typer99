@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 import { Player, GameStats, AvailableWordlists } from '@/types';
 import { getSocket } from '@/lib/socket';
 
@@ -15,7 +15,7 @@ export const GameResults: React.FC<GameResultsProps> = ({
   gameStats, 
   currentPlayerId 
 }) => {
-  const router = useRouter();
+  // const router = useRouter();
   const [wordlistInfo, setWordlistInfo] = useState<{name: string, nsfw: boolean, eligibleForXP: boolean} | null>(null);
   
   // Get wordlist info if available

@@ -155,7 +155,7 @@ export function useGame(): UseGameReturn {
         clearInterval(updateIntervalRef.current);
       }
     };
-  }, []);
+  }, [gameState]);
   
   const updateProgress = useCallback((progress: number, wpm: number, accuracy: number) => {
     if (!gameId) return;

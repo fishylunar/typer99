@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSocket, reconnectSocket } from '@/lib/socket';
 import { GameMode, AIDifficulty, AvailableWordlists } from '@/types';
-import Link from 'next/link';
+// import Link from 'next/link';
 
 export default function HomePage() {
   const router = useRouter();
@@ -63,6 +63,7 @@ export default function HomePage() {
   };
 
   // Filter out NSFW wordlists unless showAdult is true
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const filteredWordlists = Object.entries(wordlists).filter(([_, data]) => {
     return showAdult || !data.nsfw;
   });
