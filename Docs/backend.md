@@ -45,7 +45,7 @@ const server = http.createServer(app);
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? 'https://typer99.mewo.gay' 
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    : ['http://localhost:3003', 'http://127.0.0.1:3003'],
   methods: ['GET', 'POST'],
   credentials: true
 }));
@@ -60,7 +60,7 @@ const io = new Server(server, {
   cors: {
     origin: process.env.NODE_ENV === 'production' 
       ? 'https://typer99.mewo.gay' 
-      : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+      : ['http://localhost:3003', 'http://127.0.0.1:3003'],
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -70,7 +70,7 @@ const io = new Server(server, {
 socketHandler(io);
 
 // Start server
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3004;
 server.listen(PORT, () => {
   console.log(`Typer-99 server running on port ${PORT}`);
 });
@@ -395,7 +395,7 @@ socket.on('game_completed', ({ gameId, wpm, accuracy, time, mistypedWords = 0 })
     // End game when first player completes (after delay)
     setTimeout(() => {
       endGame(game, io);
-    }, 3000);
+    }, 3003);
     
   } catch (error) {
     console.error('Error in game_completed:', error);
@@ -579,7 +579,7 @@ describe('Word Lists', () => {
 
 The server can be configured using environment variables:
 
-- `PORT`: The port the server listens on (default: 3001)
+- `PORT`: The port the server listens on (default: 3004)
 - `NODE_ENV`: "development" or "production" (affects CORS settings)
 
 ## Deployment Considerations

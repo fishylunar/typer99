@@ -22,8 +22,8 @@ RUN npm run build
 ENV NODE_ENV production
 
 # Expose ports for both frontend and backend
-EXPOSE 3000
-EXPOSE 3001
+EXPOSE 3003
+EXPOSE 3004
 
 # Start both frontend and backend services using a custom script
-CMD ["sh", "-c", "node server/index.js & npm start"]
+CMD ["sh", "-c", "node server/index.js & npm start -p 3003"]

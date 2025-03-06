@@ -43,7 +43,7 @@ Typer-99 is a real-time multiplayer typing game built with Next.js and Socket.IO
    npm run dev:all
    ```
 
-4. Open your browser and navigate to `http://localhost:3000`
+4. Open your browser and navigate to `http://localhost:3003`
 
 ## Documentation
 
