@@ -5,7 +5,7 @@ const http = require('http');
 
 describe('Socket Handler', () => {
   let io, clientSocket, httpServer;
-  const port = process.env.TEST_PORT || Math.floor(3000 + Math.random() * 1000);
+  const port = process.env.TEST_PORT || Math.floor(3003 + Math.random() * 1000);
   
   // Set up a simple test server
   beforeAll((done) => {

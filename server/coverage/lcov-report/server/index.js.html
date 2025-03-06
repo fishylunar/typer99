@@ -178,7 +178,7 @@ const server = <span class="cstat-no" title="statement not covered" >http.create
 <span class="cstat-no" title="statement not covered" >app.use(cors({</span>
   origin: process.env.NODE_ENV === 'production' 
     ? 'https://typer99.mewo.gay' 
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    : ['http://localhost:3003', 'http://127.0.0.1:3003'],
   methods: ['GET', 'POST'],
   credentials: true
 }));
@@ -193,7 +193,7 @@ const io = <span class="cstat-no" title="statement not covered" >new Server(serv
   cors: {
     origin: process.env.NODE_ENV === 'production' 
       ? 'https://typer99.mewo.gay' 
-      : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+      : ['http://localhost:3003', 'http://127.0.0.1:3003'],
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -209,7 +209,7 @@ const io = <span class="cstat-no" title="statement not covered" >new Server(serv
 });
 &nbsp;
 // Start server
-const PORT = <span class="cstat-no" title="statement not covered" >process.env.PORT || 3001;</span>
+const PORT = <span class="cstat-no" title="statement not covered" >process.env.PORT || 3004;</span>
 <span class="cstat-no" title="statement not covered" >server.listen(PORT, <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  console.log(`Typer-99 server running on port ${PORT}`);</span>
 });

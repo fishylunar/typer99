@@ -11,8 +11,8 @@ services:
       - NODE_ENV=production
       - NEXT_PUBLIC_SOCKET_URL=wss://typer99-api.mewo.gay
     ports:
-      - "3000:3000"  # Frontend
-      - "3001:3001"  # Backend socket server
+      - "3003:3003"  # Frontend
+      - "3004:3004"  # Backend socket server
     networks:
       - traefik
     labels:
@@ -21,13 +21,13 @@ services:
       - "traefik.http.routers.typer99.rule=Host(`typer99.mewo.gay`)"
       - "traefik.http.routers.typer99.entrypoints=websecure"
       - "traefik.http.routers.typer99.tls=true"
-      - "traefik.http.services.typer99.loadbalancer.server.port=3000"
+      - "traefik.http.services.typer99.loadbalancer.server.port=3003"
 
       # Backend API routing
       - "traefik.http.routers.typer99-api.rule=Host(`typer99-api.mewo.gay`)"
       - "traefik.http.routers.typer99-api.entrypoints=websecure"
       - "traefik.http.routers.typer99-api.tls=true"
-      - "traefik.http.services.typer99-api.loadbalancer.server.port=3001"
+      - "traefik.http.services.typer99-api.loadbalancer.server.port=3004"
 
 networks:
   traefik:

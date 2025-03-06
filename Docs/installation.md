@@ -55,7 +55,7 @@ cd ..
 Create a `.env.local` file in the root directory with the following content:
 
 ```plain
-NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
+NEXT_PUBLIC_SOCKET_URL=http://localhost:3004
 ```
 
 #### Backend Environment (Optional)
@@ -63,7 +63,7 @@ NEXT_PUBLIC_SOCKET_URL=http://localhost:3001
 If needed, create a `.env` file in the `server` directory:
 
 ```plain
-PORT=3001
+PORT=3004
 NODE_ENV=development
 ```
 
@@ -76,8 +76,8 @@ npm run dev:all
 ```
 
 This will start:
-- Next.js frontend on http://localhost:3000
-- Socket.IO server on http://localhost:3001
+- Next.js frontend on http://localhost:3003
+- Socket.IO server on http://localhost:3004
 
 Alternatively, you can start them separately:
 
@@ -91,7 +91,7 @@ npm run server
 
 ### 6. Verify Installation
 
-Open your browser and navigate to http://localhost:3000. You should see the Typer-99 homepage. Create a game to verify that the Socket.IO connection works correctly.
+Open your browser and navigate to http://localhost:3003. You should see the Typer-99 homepage. Create a game to verify that the Socket.IO connection works correctly.
 
 ## Docker Setup (Alternative)
 
@@ -112,7 +112,7 @@ If you encounter any issues during installation:
 
 ### Socket.IO Connection Problems
 
-- Ensure the Socket.IO server is running on port 3001
+- Ensure the Socket.IO server is running on port 3004
 - Check browser console for connection errors
 - Verify that CORS is properly configured in the server
 
@@ -131,7 +131,7 @@ npm install
 
 ### Port Conflicts
 
-If port 3000 or 3001 is already in use:
+If port 3003 or 3004 is already in use:
 
 - Change the port in Next.js config for the frontend
 - Update the PORT environment variable for the backend

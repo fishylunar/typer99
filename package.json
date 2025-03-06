@@ -3,12 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3003",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3003",
     "lint": "next lint",
     "server": "cd server && node index.js",
-    "dev:all": "concurrently \"npm run dev\" \"npm run server\""
+    "dev:all": "npx concurrently \"npm run dev\" \"npm run server\"",
+    "test": "npm run test:server",
+    "test:server": "cd server && npm test",
+    "test:server:watch": "cd server && npm run test:watch",
+    "test:server:coverage": "cd server && npm run test:coverage"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -28,7 +32,6 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/socket.io-client": "^1.4.36",
-    "concurrently": "^9.1.2",
     "eslint": "^9",
     "eslint-config-next": "15.2.1",
     "tailwindcss": "^4",

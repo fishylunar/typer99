@@ -13,7 +13,7 @@ const server = http.createServer(app);
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? 'https://typer99.mewo.gay' 
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    : ['http://localhost:3003', 'http://127.0.0.1:3003'],
   methods: ['GET', 'POST'],
   credentials: true
 }));
@@ -28,7 +28,7 @@ const io = new Server(server, {
   cors: {
     origin: process.env.NODE_ENV === 'production' 
       ? 'https://typer99.mewo.gay' 
-      : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+      : ['http://localhost:3003', 'http://127.0.0.1:3003'],
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -44,7 +44,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3004;
 server.listen(PORT, () => {
   console.log(`Typer-99 server running on port ${PORT}`);
 });

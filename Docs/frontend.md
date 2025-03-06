@@ -529,7 +529,7 @@ let socket: MySocket | null = null;
 // Get the socket instance, creating it if it doesn't exist
 export function getSocket(): MySocket {
   if (!socket) {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3004';
 
     socket = socketIOClient(socketUrl, {
       autoConnect: true,
