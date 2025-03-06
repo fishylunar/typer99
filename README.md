@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Typer-99
 
-## Getting Started
+A battle royale typing game where speed and accuracy determine your fate. Race against other players to type the fastest and most accurately in this real-time multiplayer typing competition.
 
-First, run the development server:
+![Typer-99 Screenshot](https://via.placeholder.com/800x400?text=Typer-99+Screenshot)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Overview
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Typer-99 is a real-time multiplayer typing game built with Next.js and Socket.IO. Players can compete against each other or AI opponents in various game modes, testing their typing speed and accuracy. The game features a battle royale mode where players can send word attacks to opponents, adding a strategic element to the competition.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Game Modes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **1v1**: Direct competition between two players - first to finish the text wins
+- **Free-for-All**: Up to 10 players racing to finish the text first
+- **Battle Royale**: Type faster to attack other players with extra words
+- **Practice**: Play against AI opponents with adjustable difficulty
 
-## Learn More
+## Key Features
 
-To learn more about Next.js, take a look at the following resources:
+- **Real-time Multiplayer**: Compete against players around the world
+- **Live Progress Tracking**: See everyone's progress, WPM, and accuracy in real-time
+- **Performance Metrics**: Detailed statistics on your typing performance
+- **Customizable Themes**: Multiple themes available with options to create your own
+- **Responsive Design**: Play on desktop or tablets with a responsive interface
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Quick Start
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/typer99.git
+   cd typer99
+   ```
 
-## Deploy on Vercel
+2. Install dependencies:
+   ```bash
+   npm install
+   cd server && npm install && cd ..
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. Start the development servers:
+   ```bash
+   npm run dev:all
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. Open your browser and navigate to `http://localhost:3000`
+
+## Documentation
+
+For detailed information about Typer-99, please check our documentation:
+
+- [Installation Guide](/Docs/installation.md) - Detailed setup instructions
+- [User Guide](/Docs/user-guide.md) - Learn how to play the game
+- [Game Mechanics](/Docs/game-mechanics.md) - Detailed explanation of game mechanics
+- [Architecture Overview](/Docs/architecture.md) - Technical architecture of the application
+- [Frontend Documentation](/Docs/frontend.md) - Details about the Next.js frontend
+- [Backend Documentation](/Docs/backend.md) - Details about the Socket.IO server
+- [API Reference](/Docs/api-reference.md) - Socket.IO events documentation
+- [Component Reference](/Docs/component-reference.md) - Frontend component documentation
+- [Theme Customization](/Docs/themes.md) - Guide to customizing game themes
+- [Contributing Guide](/Docs/contributing.md) - How to contribute to the project
+- [Known Issues](/Docs/known-bugs.md) - List of known bugs and workarounds
+- [Roadmap](/Docs/future-features.md) - Planned features and improvements
+
+## Tech Stack
+
+- **Frontend**: Next.js (App Router), TypeScript, Tailwind CSS
+- **Backend**: Node.js, Express, Socket.IO
+- **Real-time Communication**: Socket.IO
+- **Styling**: Tailwind CSS with custom theming
+
+## License
+
+MIT

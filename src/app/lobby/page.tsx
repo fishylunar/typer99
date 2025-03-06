@@ -1,0 +1,338 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useLobby } from '@/hooks/useLobby';
+import { getSocket } from '@/lib/socket';
+import { Player, GameMode, AIDifficulty } from '@/types';
+import { NicknameDialog } from '@/components/NicknameDialog';
+import Link from 'next/link';
+
+export default function LobbyPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [nickname, setNickname] = useState<string | null>(searchParams.get('nickname'));
+  const lobbyId = searchParams.get('lobbyId');
+  const gameMode = searchParams.get('mode') as GameMode || 'free-for-all';
+  const aiDifficulty = searchParams.get('aiDifficulty') as AIDifficulty || 'medium';
+  
+  // Fix: Change initial state to check if nickname is empty
+  const [showNicknameDialog, setShowNicknameDialog] = useState(
+    Boolean(lobbyId && (!nickname || nickname.trim() === ''))
+  );
+  
+  const {
+    lobby,
+    error,
+    isConnecting,
+    joinLobby,
+    startGame,
+    isHost,
+    currentPlayerId
+  } = useLobby();
+  
+  const [copied, setCopied] = useState(false);
+  
+  // Fix: Improve the nickname checking and dialog logic
+  useEffect(() => {
+    console.log("Checking nickname:", { nickname, lobbyId, showDialog: showNicknameDialog });
+    if (lobbyId && (!nickname || nickname.trim() === '')) {
+      console.log("Setting nickname dialog to true");
+      setShowNicknameDialog(true);
+    }
+  }, [nickname, lobbyId]);
+  
+  // Handle nickname submission
+  const handleNicknameSubmit = (newNickname: string) => {
+    console.log("Nickname submitted:", newNickname);
+    setNickname(newNickname);
+    setShowNicknameDialog(false);
+    
+    // Fix: Join the lobby immediately after nickname is set
+    joinLobby({
+      nickname: newNickname,
+      lobbyId: lobbyId || undefined,
+      gameMode: lobbyId ? undefined : gameMode
+    });
+  };
+  
+  // Join lobby when ready
+  useEffect(() => {
+    if (!nickname || showNicknameDialog) {
+      console.log("Not joining lobby yet:", { nickname, showDialog: showNicknameDialog });
+      return;
+    }
+    
+    console.log("Joining lobby with:", { nickname, lobbyId, gameMode, aiDifficulty });
+    
+    joinLobby({
+      nickname,
+      lobbyId: lobbyId || undefined,
+      gameMode: lobbyId ? undefined : gameMode,
+      aiDifficulty: gameMode === 'practice' ? aiDifficulty : undefined
+    });
+  }, [nickname, lobbyId, gameMode, aiDifficulty, joinLobby, showNicknameDialog]);
+  
+  // Navigate to game when it starts
+  useEffect(() => {
+    if (lobby?.gameStarted) {
+      router.push(`/game?lobbyId=${lobby.id}`);
+    }
+  }, [lobby?.gameStarted, lobby?.id, router]);
+
+  // Direct navigation on game_starting event
+  useEffect(() => {
+    const socket = getSocket();
+    
+    const handleDirectGameStart = () => {
+      console.log("Forcing navigation to game page");
+      if (lobby) {
+        router.push(`/game?lobbyId=${lobby.id}`);
+      }
+    };
+    
+    socket.on('game_starting', handleDirectGameStart);
+    
+    return () => {
+      socket.off('game_starting', handleDirectGameStart);
+    };
+  }, [router, lobby]);
+  
+  // Handle error
+  useEffect(() => {
+    if (error) {
+      alert(`Error: ${error}`);
+      router.replace('/');
+    }
+  }, [error, router]);
+  
+  // Fix: Add debugging to see values
+  useEffect(() => {
+    if (lobby) {
+      console.log("Lobby data:", { 
+        lobby, 
+        isHost, 
+        currentPlayerId,
+        hostId: lobby.hostId 
+      });
+    }
+  }, [lobby, isHost, currentPlayerId]);
+  
+  // Add explicit debug button
+  const debugHostStatus = () => {
+    console.log("Debug host status:", {
+      lobby,
+      isHost,
+      currentPlayerId,
+      hostId: lobby?.hostId,
+      allPlayers: lobby?.players
+    });
+  };
+  
+  // Force check the host status
+  const checkHostStatus = () => {
+    const isActuallyHost = lobby && currentPlayerId === lobby.hostId;
+    console.log(`Direct host check: ${isActuallyHost}`, {
+      currentId: currentPlayerId,
+      hostId: lobby?.hostId
+    });
+    return isActuallyHost;
+  }
+  
+  // Copy invite link
+  const copyInviteLink = () => {
+    if (!lobby) return;
+    
+    const url = `${window.location.origin}/lobby?nickname=&lobbyId=${lobby.id}`;
+    navigator.clipboard.writeText(url).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      },
+      () => alert('Failed to copy link')
+    );
+  };
+  
+  if (isConnecting) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Connecting...</h2>
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+      </main>
+    );
+  }
+  
+  if (!lobby) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Error connecting to lobby</h2>
+          <Link href="/" className="text-primary hover:underline">
+            Return to Home
+          </Link>
+        </div>
+      </main>
+    );
+  }
+  
+  return (
+    <main className="min-h-screen flex flex-col p-4 bg-background">
+      {/* Fix: Make sure dialog is properly rendered with high z-index */}
+      {showNicknameDialog && (
+        <NicknameDialog 
+          isOpen={showNicknameDialog} 
+          onSubmit={handleNicknameSubmit} 
+        />
+      )}
+      
+      <div className="max-w-2xl w-full mx-auto mt-8">
+        <div className="bg-card p-6 rounded-lg shadow-lg border border-border">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Game Lobby</h1>
+            <div className="flex items-center gap-3">
+              <span className="text-sm px-3 py-1 bg-accent/20 text-accent rounded-full">
+                {lobby.gameMode === '1v1' ? '1v1 Duel' : 
+                 lobby.gameMode === 'free-for-all' ? 'Free for All' : 
+                 'Battle Royale'}
+              </span>
+              <span className="text-xs px-2 py-1 bg-neutral text-muted-foreground rounded">
+                {lobby.players.length}/{lobby.maxPlayers}
+              </span>
+            </div>
+          </div>
+          
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-semibold">Invite Code</h2>
+              <button
+                onClick={copyInviteLink}
+                className="text-xs px-2 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20"
+              >
+                {copied ? 'Copied!' : 'Copy Link'}
+              </button>
+            </div>
+            <div className="font-mono p-2 bg-neutral rounded text-center">
+              {lobby.id}
+            </div>
+          </div>
+          
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-2">Players</h2>
+            <div className="space-y-2">
+              {lobby.players.map(player => (
+                <PlayerItem 
+                  key={player.id} 
+                  player={player} 
+                  isCurrentPlayer={player.id === currentPlayerId}
+                />
+              ))}
+              
+              {/* Show AI opponent for practice mode */}
+              {lobby.gameMode === 'practice' && (
+                <div className="flex items-center justify-between p-3 rounded-lg border border-accent bg-accent/10">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">AI Opponent</span>
+                    <span className="text-xs bg-accent/20 text-accent px-1.5 py-0.5 rounded">
+                      {lobby.aiSettings?.difficulty || 'Medium'} Difficulty
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">
+                      ~{lobby.aiSettings?.baseWPM || 60} WPM
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Debug button - uncomment if needed */}
+          {/* <button
+            onClick={debugHostStatus}
+            className="mb-4 px-3 py-1 text-xs bg-neutral text-muted-foreground rounded-md"
+          >
+            Debug Host Status
+          </button> */}
+          
+          {/* Fix: Make sure the host check is clear and visible */}
+          <div className="mb-4 text-xs">
+            <p>Your ID: <span className="font-mono">{currentPlayerId?.substring(0, 8)}...</span></p>
+            <p>Host ID: <span className="font-mono">{lobby?.hostId?.substring(0, 8)}...</span></p>
+            <p>You are {isHost ? "the host" : "not the host"}</p>
+          </div>
+          
+          {/* Fix: Make the host condition more explicit */}
+          {isHost === true ? (
+            <button
+              onClick={startGame}
+              disabled={lobby.players.length < (lobby.gameMode === '1v1' ? 2 : 1)}
+              className="w-full py-3 bg-primary text-white rounded-md font-medium disabled:opacity-50 hover:bg-primary/90"
+            >
+              Start Game {lobby.gameMode === '1v1' && lobby.players.length < 2 ? "(Waiting for opponent)" : ""}
+            </button>
+          ) : (
+            <div className="text-center text-muted-foreground">
+              Waiting for host to start the game...
+            </div>
+          )}
+          
+          {/* Debug buttons - useful for troubleshooting */}
+          <div className="mb-4 px-4 py-2 bg-card rounded-lg border border-border text-xs">
+            <button
+              onClick={() => {
+                console.log("Force host status check:", checkHostStatus());
+              }}
+              className="px-2 py-1 bg-neutral text-white rounded mr-2"
+            >
+              Check Host
+            </button>
+            
+            <button
+              onClick={() => {
+                startGame();
+                // Add a fallback direct navigation after a short delay
+                setTimeout(() => {
+                  if (lobby) router.push(`/game?lobbyId=${lobby.id}`);
+                }, 1000);
+              }}
+              className="px-2 py-1 bg-primary text-white rounded"
+            >
+              Force Start
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+interface PlayerItemProps {
+  player: Player;
+  isCurrentPlayer: boolean;
+}
+
+const PlayerItem: React.FC<PlayerItemProps> = ({ player, isCurrentPlayer }) => {
+  return (
+    <div className={`flex items-center justify-between p-3 rounded-lg border ${
+      isCurrentPlayer ? 'border-primary bg-primary/10' : 'border-border'
+    }`}>
+      <div className="flex items-center gap-2">
+        <span className={`font-medium ${isCurrentPlayer ? 'text-primary' : ''}`}>
+          {player.nickname}
+        </span>
+        {isCurrentPlayer && (
+          <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+            You
+          </span>
+        )}
+      </div>
+      {player.isHost && (
+        <span className="text-xs bg-accent/20 text-accent px-1.5 py-0.5 rounded">
+          Host
+        </span>
+      )}
+    </div>
+  );
+};
