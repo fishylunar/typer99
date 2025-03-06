@@ -19,13 +19,13 @@ services:
       # Frontend routing
       - "traefik.enable=true"
       - "traefik.http.routers.typer99.rule=Host(`typer99.mewo.gay`)"
-      - "traefik.http.routers.typer99.entrypoints=https"
+      - "traefik.http.routers.typer99.entrypoints=websecure"
       - "traefik.http.routers.typer99.tls=true"
       - "traefik.http.services.typer99.loadbalancer.server.port=3000"
-      
+
       # Backend API routing
       - "traefik.http.routers.typer99-api.rule=Host(`typer99-api.mewo.gay`)"
-      - "traefik.http.routers.typer99-api.entrypoints=https"
+      - "traefik.http.routers.typer99-api.entrypoints=websecure"
       - "traefik.http.routers.typer99-api.tls=true"
       - "traefik.http.services.typer99-api.loadbalancer.server.port=3001"
 
