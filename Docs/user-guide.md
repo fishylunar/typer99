@@ -148,4 +148,4 @@ If you encounter any issues or have questions:
 - Visit the [Game Mechanics](/Docs/game-mechanics.md) page for detailed explanation of how scoring works
 - Explore the [Theme Customization](/Docs/themes.md) guide for more on personalizing your experience
 
-Happy typing and may your fingers be swift!
+Happy typing and may your fingers be swift! :3

@@ -11,6 +11,9 @@
 !.yarn/releases
 !.yarn/versions
 
+# Obsidian
+/Docs/.obsidian
+
 # testing
 /coverage
 
