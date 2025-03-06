@@ -28,7 +28,7 @@ Typer-99 is a real-time multiplayer typing game built with Next.js and Socket.IO
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/typer99.git
+   git clone https://github.com/fishylunar/typer99.git
    cd typer99
    ```
 
