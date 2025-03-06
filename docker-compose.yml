@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   typer99:
     container_name: typer99
@@ -9,25 +7,31 @@ services:
       dockerfile: Dockerfile
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_SOCKET_URL=wss://typer99-api.mewo.gay
+      - NEXT_PUBLIC_SOCKET_URL=https://typer99-api.mewo.gay
     ports:
       - "3003:3003"  # Frontend
       - "3004:3004"  # Backend socket server
     networks:
       - traefik
     labels:
-      # Frontend routing
+      # Common Traefik configuration
       - "traefik.enable=true"
-      - "traefik.http.routers.typer99.rule=Host(`typer99.mewo.gay`)"
-      - "traefik.http.routers.typer99.entrypoints=websecure"
-      - "traefik.http.routers.typer99.tls=true"
-      - "traefik.http.services.typer99.loadbalancer.server.port=3003"
+      
+      # Frontend routing
+      - "traefik.http.routers.typer99-frontend.rule=Host(`typer99.mewo.gay`)"
+      - "traefik.http.routers.typer99-frontend.entrypoints=websecure"
+      - "traefik.http.routers.typer99-frontend.tls=true"
+      - "traefik.http.routers.typer99-frontend.tls.certresolver=default"
+      - "traefik.http.routers.typer99-frontend.service=typer99-frontend-service"
+      - "traefik.http.services.typer99-frontend-service.loadbalancer.server.port=3003"
 
       # Backend API routing
       - "traefik.http.routers.typer99-api.rule=Host(`typer99-api.mewo.gay`)"
       - "traefik.http.routers.typer99-api.entrypoints=websecure"
       - "traefik.http.routers.typer99-api.tls=true"
-      - "traefik.http.services.typer99-api.loadbalancer.server.port=3004"
+      - "traefik.http.routers.typer99-api.tls.certresolver=default"
+      - "traefik.http.routers.typer99-api.service=typer99-api-service"
+      - "traefik.http.services.typer99-api-service.loadbalancer.server.port=3004"
 
 networks:
   traefik:

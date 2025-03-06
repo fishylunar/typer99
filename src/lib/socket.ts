@@ -12,7 +12,7 @@ let socket: MySocket | null = null;
  */
 export function getSocket(): MySocket {
   if (!socket) {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3004';
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://typer99-api.mewo.gay';
 
     socket = socketIOClient(socketUrl, {
       autoConnect: true,
