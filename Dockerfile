@@ -26,4 +26,4 @@ EXPOSE 3003
 EXPOSE 3004
 
 # Start both frontend and backend services using a custom script
-CMD ["sh", "-c", "node server/index.js & npm start -p 3003"]
+CMD ["sh", "-c", "node server/index.js & npm start"]
