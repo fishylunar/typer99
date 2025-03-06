@@ -15,6 +15,7 @@ function LobbyPageContent() {
   const lobbyId = searchParams.get('lobbyId');
   const gameMode = searchParams.get('mode') as GameMode || 'free-for-all';
   const aiDifficulty = searchParams.get('aiDifficulty') as AIDifficulty || 'medium';
+  const wordlist = searchParams.get('wordlist') || 'standard';
   
   // Fix: Change initial state to check if nickname is empty
   const [showNicknameDialog, setShowNicknameDialog] = useState(
@@ -28,7 +29,8 @@ function LobbyPageContent() {
     joinLobby,
     startGame,
     isHost,
-    currentPlayerId
+    currentPlayerId,
+    wordlists
   } = useLobby();
   
   const [copied, setCopied] = useState(false);
@@ -52,7 +54,8 @@ function LobbyPageContent() {
     joinLobby({
       nickname: newNickname,
       lobbyId: lobbyId || undefined,
-      gameMode: lobbyId ? undefined : gameMode
+      gameMode: lobbyId ? undefined : gameMode,
+      wordlist: wordlist
     });
   };
   
@@ -63,15 +66,16 @@ function LobbyPageContent() {
       return;
     }
     
-    console.log("Joining lobby with:", { nickname, lobbyId, gameMode, aiDifficulty });
+    console.log("Joining lobby with:", { nickname, lobbyId, gameMode, aiDifficulty, wordlist });
     
     joinLobby({
       nickname,
       lobbyId: lobbyId || undefined,
       gameMode: lobbyId ? undefined : gameMode,
-      aiDifficulty: gameMode === 'practice' ? aiDifficulty : undefined
+      aiDifficulty: gameMode === 'practice' ? aiDifficulty : undefined,
+      wordlist: wordlist
     });
-  }, [nickname, lobbyId, gameMode, aiDifficulty, joinLobby, showNicknameDialog]);
+  }, [nickname, lobbyId, gameMode, aiDifficulty, wordlist, joinLobby, showNicknameDialog]);
   
   // Navigate to game when it starts
   useEffect(() => {
@@ -118,18 +122,6 @@ function LobbyPageContent() {
     }
   }, [lobby, isHost, currentPlayerId]);
   
-  // Add explicit debug button
-  /*
-  const debugHostStatus = () => {
-    console.log("Debug host status:", {
-      lobby,
-      isHost,
-      currentPlayerId,
-      hostId: lobby?.hostId,
-      allPlayers: lobby?.players
-    });
-  };
-  */
   // Force check the host status
   const checkHostStatus = () => {
     const isActuallyHost = lobby && currentPlayerId === lobby.hostId;
@@ -178,6 +170,15 @@ function LobbyPageContent() {
     );
   }
   
+  // Get the wordlist display name and metadata
+  const currentWordlist = lobby.wordlist || 'standard';
+  const wordlistMeta = wordlists[currentWordlist] || { 
+    name: 'Standard', 
+    description: 'Default wordlist', 
+    nsfw: false,
+    eligibleForXP: true 
+  };
+  
   return (
     <main className="min-h-screen flex flex-col p-4 bg-background">
       {/* Fix: Make sure dialog is properly rendered with high z-index */}
@@ -196,12 +197,30 @@ function LobbyPageContent() {
               <span className="text-sm px-3 py-1 bg-accent/20 text-accent rounded-full">
                 {lobby.gameMode === '1v1' ? '1v1 Duel' : 
                  lobby.gameMode === 'free-for-all' ? 'Free for All' : 
+                 lobby.gameMode === 'practice' ? 'Practice' :
                  'Battle Royale'}
               </span>
               <span className="text-xs px-2 py-1 bg-neutral text-muted-foreground rounded">
                 {lobby.players.length}/{lobby.maxPlayers}
               </span>
             </div>
+          </div>
+          
+          {/* Display the selected wordlist */}
+          <div className="mb-4 p-3 rounded-lg bg-background border border-border">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-sm font-medium">Wordlist: </span>
+                <span className="text-sm">{wordlistMeta.name}</span>
+                {wordlistMeta.nsfw && (
+                  <span className="ml-2 text-xs px-1.5 py-0.5 bg-error/20 text-error rounded">NSFW</span>
+                )}
+                {!wordlistMeta.eligibleForXP && (
+                  <span className="ml-2 text-xs px-1.5 py-0.5 bg-warning/20 text-warning rounded">No XP</span>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{wordlistMeta.description}</p>
           </div>
           
           <div className="mb-6">
@@ -249,36 +268,6 @@ function LobbyPageContent() {
             </div>
           </div>
           
-          {/* Debug button - uncomment if needed */}
-          {/* <button
-            onClick={debugHostStatus}
-            className="mb-4 px-3 py-1 text-xs bg-neutral text-muted-foreground rounded-md"
-          >
-            Debug Host Status
-          </button> */}
-          
-          {/* Fix: Make sure the host check is clear and visible */}
-          <div className="mb-4 text-xs">
-            <p>Your ID: <span className="font-mono">{currentPlayerId?.substring(0, 8)}...</span></p>
-            <p>Host ID: <span className="font-mono">{lobby?.hostId?.substring(0, 8)}...</span></p>
-            <p>You are {isHost ? "the host" : "not the host"}</p>
-          </div>
-          
-          {/* Fix: Make the host condition more explicit */}
-          {isHost === true ? (
-            <button
-              onClick={startGame}
-              disabled={lobby.players.length < (lobby.gameMode === '1v1' ? 2 : 1)}
-              className="w-full py-3 bg-primary text-white rounded-md font-medium disabled:opacity-50 hover:bg-primary/90"
-            >
-              Start Game {lobby.gameMode === '1v1' && lobby.players.length < 2 ? "(Waiting for opponent)" : ""}
-            </button>
-          ) : (
-            <div className="text-center text-muted-foreground">
-              Waiting for host to start the game...
-            </div>
-          )}
-          
           {/* Debug buttons - useful for troubleshooting */}
           <div className="mb-4 px-4 py-2 bg-card rounded-lg border border-border text-xs">
             <button
@@ -303,6 +292,21 @@ function LobbyPageContent() {
               Force Start
             </button>
           </div>
+          
+          {/* Fix: Make the host condition more explicit */}
+          {isHost === true ? (
+            <button
+              onClick={startGame}
+              disabled={lobby.players.length < (lobby.gameMode === '1v1' ? 2 : 1)}
+              className="w-full py-3 bg-primary text-white rounded-md font-medium disabled:opacity-50 hover:bg-primary/90"
+            >
+              Start Game {lobby.gameMode === '1v1' && lobby.players.length < 2 ? "(Waiting for opponent)" : ""}
+            </button>
+          ) : (
+            <div className="text-center text-muted-foreground">
+              Waiting for host to start the game...
+            </div>
+          )}
         </div>
       </div>
     </main>

@@ -1,166 +1,244 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { GameMode, AIDifficulty } from '@/types';
+import { getSocket, reconnectSocket } from '@/lib/socket';
+import { GameMode, AIDifficulty, AvailableWordlists } from '@/types';
+import Link from 'next/link';
 
 export default function HomePage() {
+  const router = useRouter();
   const [nickname, setNickname] = useState('');
   const [lobbyId, setLobbyId] = useState('');
-  const [selectedMode, setSelectedMode] = useState<GameMode>('free-for-all');
+  const [gameMode, setGameMode] = useState<GameMode>('free-for-all');
   const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>('medium');
-  const [isJoining, setIsJoining] = useState(false);
-  const router = useRouter();
+  const [wordlists, setWordlists] = useState<AvailableWordlists>({});
+  const [selectedWordlist, setSelectedWordlist] = useState('standard');
+  const [showAdult, setShowAdult] = useState(false);
 
-  const handleCreateGame = () => {
-    if (!nickname) return;
-    setIsJoining(true);
+  // Connect socket and get available wordlists
+  useEffect(() => {
+    reconnectSocket();
+    const socket = getSocket();
     
-    // Create a new lobby and navigate to lobby page
-    const playerName = nickname.trim() || `Player_${Math.floor(Math.random() * 1000)}`;
+    const handleWordlists = (lists: AvailableWordlists) => {
+      setWordlists(lists);
+    };
     
-    // Include AI difficulty only for practice mode
-    const params = new URLSearchParams({
-      nickname: playerName,
-      mode: selectedMode
-    });
+    socket.on('wordlists', handleWordlists);
+    socket.emit('get_wordlists');
     
-    if (selectedMode === 'practice') {
-      params.append('aiDifficulty', aiDifficulty);
+    return () => {
+      socket.off('wordlists', handleWordlists);
+    };
+  }, []);
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!nickname.trim()) {
+      alert('Please enter a nickname');
+      return;
     }
     
-    // Navigate to lobby page, socket connection will happen there
-    router.push(`/lobby?${params.toString()}`);
+    if (lobbyId) {
+      // Join existing lobby
+      router.push(`/lobby?nickname=${encodeURIComponent(nickname)}&lobbyId=${encodeURIComponent(lobbyId)}`);
+    } else {
+      // Create new lobby with selected game mode and wordlist
+      const params = new URLSearchParams({
+        nickname: nickname,
+        mode: gameMode
+      });
+      
+      if (gameMode === 'practice') {
+        params.append('aiDifficulty', aiDifficulty);
+      }
+      
+      params.append('wordlist', selectedWordlist);
+      
+      router.push(`/lobby?${params.toString()}`);
+    }
   };
-  
-  const handleJoinGame = () => {
-    if (!nickname || !lobbyId) return;
-    setIsJoining(true);
-    
-    // Join existing lobby
-    const playerName = nickname.trim() || `Player_${Math.floor(Math.random() * 1000)}`;
-    
-    // Navigate to lobby page with ID
-    router.push(`/lobby?nickname=${encodeURIComponent(playerName)}&lobbyId=${lobbyId}`);
-  };
+
+  // Filter out NSFW wordlists unless showAdult is true
+  const filteredWordlists = Object.entries(wordlists).filter(([_, data]) => {
+    return showAdult || !data.nsfw;
+  });
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-5xl font-bold text-primary">Typer-99</h1>
-          <p className="mt-2 text-xl text-muted-foreground">Battle Royale Typing Game</p>
-        </div>
+      <div className="max-w-md w-full">
+        <h1 className="text-4xl font-bold text-center mb-8">Typer-99</h1>
         
-        <div className="bg-card p-6 rounded-lg shadow-lg border border-border">
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="nickname" className="block text-sm font-medium mb-1">
-                Nickname
+        <div className="bg-card rounded-lg p-6 shadow-lg border border-border">
+          <form onSubmit={handleSubmit}>
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">
+                Your Nickname
               </label>
               <input
-                id="nickname"
                 type="text"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                placeholder="Enter your nickname"
-                className="w-full p-2 border border-input rounded-md bg-background"
-                maxLength={15}
-                autoComplete="off" // Disable autocomplete
-                required
+                className="w-full p-2 rounded border border-input bg-background"
+                placeholder="Enter nickname"
+                maxLength={16}
               />
             </div>
             
-            <div>
-              <label className="block text-sm font-medium mb-2">Game Mode</label>
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                {(['1v1', 'free-for-all', 'battle-royale', 'practice'] as GameMode[]).map((mode) => (
-                  <button
-                    key={mode}
-                    className={`p-2 rounded-md border ${
-                      selectedMode === mode
-                        ? 'border-primary bg-primary/20 text-primary'
-                        : 'border-input bg-background text-foreground'
-                    }`}
-                    onClick={() => setSelectedMode(mode)}
-                    type="button"
-                  >
-                    {mode === '1v1' ? '1v1' : 
-                     mode === 'free-for-all' ? 'Free for All' : 
-                     mode === 'practice' ? 'Practice' :
-                     'Battle Royale'}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Show AI difficulty selector when Practice mode is selected */}
-            {selectedMode === 'practice' && (
-              <div>
-                <label className="block text-sm font-medium mb-2">AI Difficulty</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {(['easy', 'medium', 'hard', 'expert'] as AIDifficulty[]).map((level) => (
-                    <button
-                      key={level}
-                      className={`p-2 rounded-md border ${
-                        aiDifficulty === level
-                          ? 'border-primary bg-primary/20 text-primary'
-                          : 'border-input bg-background text-foreground'
-                      }`}
-                      onClick={() => setAiDifficulty(level)}
-                      type="button"
-                    >
-                      {level.charAt(0).toUpperCase() + level.slice(1)}
-                    </button>
-                  ))}
+            {/* Wordlist Selection */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium">
+                  Word List
+                </label>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    id="showAdult" 
+                    checked={showAdult} 
+                    onChange={() => setShowAdult(!showAdult)}
+                  />
+                  <label htmlFor="showAdult" className="text-xs text-muted-foreground">
+                    Show NSFW lists
+                  </label>
                 </div>
               </div>
-            )}
-            
-            <div className="pt-4">
-              <button
-                onClick={handleCreateGame}
-                disabled={isJoining || !nickname}
-                className="w-full bg-primary hover:bg-primary/90 text-white py-2 rounded-md font-medium disabled:opacity-50"
+              
+              <select
+                value={selectedWordlist}
+                onChange={(e) => setSelectedWordlist(e.target.value)}
+                className="w-full p-2 rounded border border-input bg-background"
               >
-                {isJoining ? 'Creating...' : 'Create Game'}
-              </button>
+                {filteredWordlists.map(([key, data]) => (
+                  <option key={key} value={key}>
+                    {data.name}{data.nsfw ? ' (NSFW)' : ''} - {data.eligibleForXP ? '✓ XP' : '✗ No XP'}
+                  </option>
+                ))}
+              </select>
+              
+              {/* Description of selected wordlist */}
+              {selectedWordlist && wordlists[selectedWordlist] && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {wordlists[selectedWordlist].description}
+                </p>
+              )}
             </div>
             
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border"></div>
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-2 bg-card text-muted-foreground">OR JOIN EXISTING</span>
-              </div>
-            </div>
-            
-            <div>
-              <label htmlFor="lobbyId" className="block text-sm font-medium mb-1">
-                Lobby Code
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">
+                Join Existing Lobby (Optional)
               </label>
               <input
-                id="lobbyId"
                 type="text"
                 value={lobbyId}
                 onChange={(e) => setLobbyId(e.target.value)}
-                placeholder="Enter lobby code"
-                className="w-full p-2 border border-input rounded-md bg-background"
-                required
+                className="w-full p-2 rounded border border-input bg-background"
+                placeholder="Enter lobby ID or leave blank to create one"
               />
             </div>
             
-            <div>
-              <button
-                onClick={handleJoinGame}
-                disabled={isJoining || !nickname || !lobbyId}
-                className="w-full bg-secondary hover:bg-secondary/90 text-white py-2 rounded-md font-medium disabled:opacity-50"
-              >
-                {isJoining ? 'Joining...' : 'Join Game'}
-              </button>
-            </div>
-          </div>
+            {!lobbyId && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">
+                  Game Mode
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    className={`p-2 rounded text-center border transition-colors ${
+                      gameMode === 'free-for-all' 
+                        ? 'bg-primary text-white border-primary hover:bg-primary/80' 
+                        : 'bg-neutral text-foreground border-border hover:border-primary hover:bg-neutral/80'
+                    }`}
+                    onClick={() => setGameMode('free-for-all')}
+                  >
+                    Free For All
+                  </button>
+                  <button
+                    type="button"
+                    className={`p-2 rounded text-center border transition-colors ${
+                      gameMode === '1v1' 
+                        ? 'bg-primary text-white border-primary hover:bg-primary/80' 
+                        : 'bg-neutral text-foreground border-border hover:border-primary hover:bg-neutral/80'
+                    }`}
+                    onClick={() => setGameMode('1v1')}
+                  >
+                    1v1 Duel
+                  </button>
+                  <button
+                    type="button"
+                    className={`p-2 rounded text-center border transition-colors ${
+                      gameMode === 'battle-royale' 
+                        ? 'bg-primary text-white border-primary hover:bg-primary/80' 
+                        : 'bg-neutral text-foreground border-border hover:border-primary hover:bg-neutral/80'
+                    }`}
+                    onClick={() => setGameMode('battle-royale')}
+                  >
+                    Battle Royale
+                  </button>
+                  <button
+                    type="button"
+                    className={`p-2 rounded text-center border transition-colors ${
+                      gameMode === 'practice' 
+                        ? 'bg-primary text-white border-primary hover:bg-primary/80' 
+                        : 'bg-neutral text-foreground border-border hover:border-primary hover:bg-neutral/80'
+                    }`}
+                    onClick={() => setGameMode('practice')}
+                  >
+                    Practice vs AI
+                  </button>
+                </div>
+                
+                {gameMode === 'practice' && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium mb-2">
+                      AI Difficulty
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      <button
+                        type="button"
+                        className={`p-1 text-sm rounded text-center ${aiDifficulty === 'easy' ? 'bg-accent text-white' : 'bg-neutral text-foreground'}`}
+                        onClick={() => setAiDifficulty('easy')}
+                      >
+                        Easy
+                      </button>
+                      <button
+                        type="button"
+                        className={`p-1 text-sm rounded text-center ${aiDifficulty === 'medium' ? 'bg-accent text-white' : 'bg-neutral text-foreground'}`}
+                        onClick={() => setAiDifficulty('medium')}
+                      >
+                        Medium
+                      </button>
+                      <button
+                        type="button"
+                        className={`p-1 text-sm rounded text-center ${aiDifficulty === 'hard' ? 'bg-accent text-white' : 'bg-neutral text-foreground'}`}
+                        onClick={() => setAiDifficulty('hard')}
+                      >
+                        Hard
+                      </button>
+                      <button
+                        type="button"
+                        className={`p-1 text-sm rounded text-center ${aiDifficulty === 'expert' ? 'bg-accent text-white' : 'bg-neutral text-foreground'}`}
+                        onClick={() => setAiDifficulty('expert')}
+                      >
+                        Expert
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <button
+              type="submit"
+              className="w-full py-2 bg-primary text-white rounded font-medium"
+            >
+              {lobbyId ? 'Join Lobby' : 'Create Lobby'}
+            </button>
+          </form>
         </div>
       </div>
     </main>

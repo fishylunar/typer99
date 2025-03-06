@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getSocket, emitEvent } from '@/lib/socket';
-import { Lobby, LobbyJoinParams, Player, GameMode } from '@/types';
+import { Lobby, LobbyJoinParams, Player, GameMode, AIDifficulty, AvailableWordlists } from '@/types';
+
+interface JoinLobbyParams {
+  nickname: string;
+  lobbyId?: string;
+  gameMode?: GameMode;
+  aiDifficulty?: AIDifficulty;
+  wordlist?: string; // Add wordlist parameter
+}
 
 export function useLobby() {
   const [lobby, setLobby] = useState<Lobby | null>(null);
@@ -11,6 +19,12 @@ export function useLobby() {
   const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
   const isHostRef = useRef(false);
+  const [wordlists, setWordlists] = useState<AvailableWordlists>({});
+  
+  // Define getWordlists early before it's used
+  const getWordlists = useCallback(() => {
+    emitEvent('get_wordlists');
+  }, []);
   
   // Update host status when lobby or currentPlayerId changes
   useEffect(() => {
@@ -85,6 +99,10 @@ export function useLobby() {
       // Update local lobby state immediately to trigger navigation
       setLobby(prev => prev ? { ...prev, gameStarted: true } : null);
     };
+
+    const handleWordlists = (availableWordlists: AvailableWordlists) => {
+      setWordlists(availableWordlists);
+    };
     
     // Register socket event listeners
     socket.on('lobby_joined', handleLobbyJoined);
@@ -93,6 +111,10 @@ export function useLobby() {
     socket.on('error', handleError);
     socket.on('lobby_reset', handleLobbyReset);
     socket.on('game_starting', handleGameStarting);
+    socket.on('wordlists', handleWordlists);
+    
+    // Request wordlists when hook is initialized
+    getWordlists();
     
     // Clean up listeners on unmount
     return () => {
@@ -102,10 +124,11 @@ export function useLobby() {
       socket.off('error', handleError);
       socket.off('lobby_reset', handleLobbyReset);
       socket.off('game_starting', handleGameStarting);
+      socket.off('wordlists', handleWordlists);
     };
-  }, [currentPlayerId]);
+  }, [currentPlayerId, getWordlists]);
   
-  const joinLobby = useCallback((params: LobbyJoinParams) => {
+  const joinLobby = useCallback((params: JoinLobbyParams) => {
     setIsConnecting(true);
     setError(null);
     emitEvent('join_lobby', params);
@@ -130,6 +153,8 @@ export function useLobby() {
     joinLobby,
     startGame,
     leaveLobby,
-    isHost
+    isHost,
+    wordlists, // Expose wordlists
+    getWordlists // Expose method to refresh wordlists
   };
 }

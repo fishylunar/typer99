@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const { generateText, calculateWPM } = require('./utils/gameUtils');
+const { generateText, calculateWPM, getAvailableWordlists } = require('./utils/gameUtils');
 
 // Data stores
 const lobbies = new Map(); // Store active lobbies
@@ -39,10 +39,15 @@ function socketHandler(io) {
   io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
     
+    // Send available wordlists when requested
+    socket.on('get_wordlists', () => {
+      socket.emit('wordlists', getAvailableWordlists());
+    });
+    
     // Join or create lobby
-    socket.on('join_lobby', ({ nickname, lobbyId, gameMode, aiDifficulty }) => {
+    socket.on('join_lobby', ({ nickname, lobbyId, gameMode, aiDifficulty, wordlist }) => {
       try {
-        console.log(`Join lobby request from: ${socket.id}, nickname: ${nickname}, lobbyId: ${lobbyId || 'new'}, mode: ${gameMode}`);
+        console.log(`Join lobby request from: ${socket.id}, nickname: ${nickname}, lobbyId: ${lobbyId || 'new'}, mode: ${gameMode}, wordlist: ${wordlist || 'standard'}`);
         
         const player = {
           id: socket.id,
@@ -84,6 +89,7 @@ function socketHandler(io) {
           lobby = {
             id: newLobbyId,
             gameMode: gameMode || 'free-for-all',
+            wordlist: wordlist || 'standard', // Add wordlist to lobby
             players: [player],
             maxPlayers: getMaxPlayers(gameMode),
             gameStarted: false,
@@ -91,7 +97,7 @@ function socketHandler(io) {
             aiSettings: gameMode === 'practice' ? AI_SETTINGS[aiDifficulty || 'medium'] : null
           };
           
-          console.log(`Creating new lobby with ID: ${newLobbyId}, host: ${socket.id}, mode: ${gameMode}`);
+          console.log(`Creating new lobby with ID: ${newLobbyId}, host: ${socket.id}, mode: ${gameMode}, wordlist: ${wordlist || 'standard'}`);
           
           lobbies.set(newLobbyId, lobby);
         }
@@ -100,7 +106,7 @@ function socketHandler(io) {
         socket.join(lobby.id);
         
         // Debug log the lobby state
-        console.log(`Lobby state after join: ID=${lobby.id}, hostId=${lobby.hostId}, players=${lobby.players.length}`);
+        console.log(`Lobby state after join: ID=${lobby.id}, hostId=${lobby.hostId}, players=${lobby.players.length}, wordlist=${lobby.wordlist || 'standard'}`);
         
         // Notify everyone in the lobby
         io.to(lobby.id).emit('player_joined', { 
@@ -130,8 +136,8 @@ function socketHandler(io) {
           return socket.emit('error', { message: 'Only host can start the game' });
         }
         
-        // Generate game text and create game object
-        const gameText = generateText(lobby.gameMode, lobby.players.length);
+        // Generate game text with selected wordlist
+        const gameText = generateText(lobby.gameMode, lobby.players.length, lobby.wordlist);
         const gameId = uuidv4();
         
         let players = [...lobby.players];
@@ -167,6 +173,7 @@ function socketHandler(io) {
             connected: true
           })),
           gameMode: lobby.gameMode,
+          wordlist: lobby.wordlist, // Add wordlist to game object
           text: gameText,
           startTime: Date.now() + 5000, // 5 second countdown
           endTime: null,
@@ -395,6 +402,7 @@ function filterLobbyData(lobby) {
   return {
     id: lobby.id,
     gameMode: lobby.gameMode,
+    wordlist: lobby.wordlist || 'standard', // Include wordlist in client data
     players: lobby.players.map(p => ({
       id: p.id,
       nickname: p.nickname,
@@ -425,6 +433,7 @@ function filterGameData(game) {
       mistypedWords: p.mistypedWords || 0 // Include mistyped words
     })),
     gameMode: game.gameMode,
+    wordlist: game.wordlist, // Include wordlist in game state data
     startTime: game.startTime,
     state: game.state
   };

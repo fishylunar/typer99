@@ -102,7 +102,10 @@ export function useGame(): UseGameReturn {
       gameStats: GameStats;
     }) => {
       setRankings(finalRankings);
-      setGameStats(stats);
+      setGameStats({
+        ...stats,
+        wordlist: gameState?.wordlist // Now this property exists on the Game type
+      });
       
       // Clear any update intervals
       if (updateIntervalRef.current) {
