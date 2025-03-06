@@ -49,73 +49,80 @@ function socketHandler(io) {
       try {
         console.log(`Join lobby request from: ${socket.id}, nickname: ${nickname}, lobbyId: ${lobbyId || 'new'}, mode: ${gameMode}, wordlist: ${wordlist || 'standard'}`);
         
-        const player = {
-          id: socket.id,
-          nickname: nickname || `Player_${socket.id.substring(0, 4)}`,
-          isReady: false,
-          isHost: false,
-          progress: 0,
-          wpm: 0,
-          accuracy: 100,
-          completedAt: null,
-          connected: true
-        };
-        
-        // Store player in session map
-        players.set(socket.id, player);
-        
-        let lobby;
-        
-        // Join existing lobby or create new one
+        // If joining existing lobby
         if (lobbyId && lobbies.has(lobbyId)) {
-          lobby = lobbies.get(lobbyId);
+          const lobby = lobbies.get(lobbyId);
+          
+          // Check if the socket is already in this lobby's room
+          const socketsInRoom = io.sockets.adapter.rooms.get(lobbyId);
+          const isInRoom = socketsInRoom && socketsInRoom.has(socket.id);
+          console.log(`Is socket ${socket.id} already in room ${lobbyId}? ${isInRoom}`);
+          
+          // Check if player is already in the lobby's player list
+          const existingPlayerIndex = lobby.players.findIndex(p => p.id === socket.id);
+          
+          if (existingPlayerIndex !== -1) {
+            console.log(`Player ${socket.id} already in lobby ${lobbyId} player list, sending current state`);
+            // Already in lobby, just refresh the state
+            socket.emit('lobby_joined', { lobby: filterLobbyData(lobby) });
+            return;
+          }
+          
+          // Clean up any disconnected players before checking if lobby is full
+          lobby.players = lobby.players.filter(p => {
+            // Keep only connected players or the current requester
+            return p.connected || p.id === socket.id;
+          });
+          
+          console.log(`Lobby ${lobbyId} player count after cleanup: ${lobby.players.length}/${lobby.maxPlayers}`);
           
           // Check if lobby is full or game already started
           if (lobby.players.length >= lobby.maxPlayers) {
+            console.log(`Lobby ${lobbyId} is full. Players: ${lobby.players.length}/${lobby.maxPlayers}`);
             return socket.emit('error', { message: 'Lobby is full' });
           }
           
           if (lobby.gameStarted) {
+            console.log(`Game already in progress in lobby ${lobbyId}`);
             return socket.emit('error', { message: 'Game already in progress' });
           }
           
-          // Add player to lobby
-          lobby.players.push(player);
-        } else {
-          // Create new lobby
-          const newLobbyId = lobbyId || uuidv4();
-          player.isHost = true;
-          
-          lobby = {
-            id: newLobbyId,
-            gameMode: gameMode || 'free-for-all',
-            wordlist: wordlist || 'standard', // Add wordlist to lobby
-            players: [player],
-            maxPlayers: getMaxPlayers(gameMode),
-            gameStarted: false,
-            hostId: socket.id,
-            aiSettings: gameMode === 'practice' ? AI_SETTINGS[aiDifficulty || 'medium'] : null
+          // Create player object
+          const player = {
+            id: socket.id,
+            nickname: nickname || `Player_${socket.id.substring(0, 4)}`,
+            isReady: false,
+            isHost: false,
+            progress: 0,
+            wpm: 0,
+            accuracy: 100,
+            completedAt: null,
+            connected: true
           };
           
-          console.log(`Creating new lobby with ID: ${newLobbyId}, host: ${socket.id}, mode: ${gameMode}, wordlist: ${wordlist || 'standard'}`);
+          // Store player in session map
+          players.set(socket.id, player);
           
-          lobbies.set(newLobbyId, lobby);
+          // Add player to lobby
+          lobby.players.push(player);
+          console.log(`Added player ${socket.id} to lobby ${lobbyId}. New count: ${lobby.players.length}/${lobby.maxPlayers}`);
+          
+          // Join socket room
+          socket.join(lobby.id);
+          
+          // Notify everyone
+          io.to(lobby.id).emit('player_joined', { 
+            player,
+            lobbyState: filterLobbyData(lobby)
+          });
+          
+          // Send lobby data to the player
+          socket.emit('lobby_joined', { lobby: filterLobbyData(lobby) });
+        } 
+        else {
+          // Create new lobby
+          createNewLobby(socket, lobbyId, nickname, gameMode, wordlist, aiDifficulty);
         }
-        
-        // Join socket room for the lobby
-        socket.join(lobby.id);
-        
-        // Debug log the lobby state
-        console.log(`Lobby state after join: ID=${lobby.id}, hostId=${lobby.hostId}, players=${lobby.players.length}, wordlist=${lobby.wordlist || 'standard'}`);
-        
-        // Notify everyone in the lobby
-        io.to(lobby.id).emit('player_joined', { 
-          player,
-          lobbyState: filterLobbyData(lobby)
-        });
-        
-        // Send lobby data to the player
-        socket.emit('lobby_joined', { lobby: filterLobbyData(lobby) });
       } catch (error) {
         console.error('Error in join_lobby:', error);
         socket.emit('error', { message: 'Failed to join lobby' });
@@ -688,5 +695,46 @@ socketHandler.cleanup = function() {
   games.clear();
   players.clear();
 };
+
+// Helper function to create a new lobby
+function createNewLobby(socket, customLobbyId, nickname, gameMode, wordlist, aiDifficulty) {
+  const player = {
+    id: socket.id,
+    nickname: nickname || `Player_${socket.id.substring(0, 4)}`,
+    isReady: false,
+    isHost: true,
+    progress: 0,
+    wpm: 0,
+    accuracy: 100,
+    completedAt: null,
+    connected: true
+  };
+  
+  // Store player in session map
+  players.set(socket.id, player);
+  
+  const newLobbyId = customLobbyId || uuidv4();
+  
+  const lobby = {
+    id: newLobbyId,
+    gameMode: gameMode || 'free-for-all',
+    wordlist: wordlist || 'standard',
+    players: [player],
+    maxPlayers: getMaxPlayers(gameMode),
+    gameStarted: false,
+    hostId: socket.id,
+    aiSettings: gameMode === 'practice' ? AI_SETTINGS[aiDifficulty || 'medium'] : null
+  };
+  
+  console.log(`Creating new lobby with ID: ${newLobbyId}, host: ${socket.id}, mode: ${gameMode}, wordlist: ${wordlist || 'standard'}, maxPlayers: ${lobby.maxPlayers}`);
+  
+  lobbies.set(newLobbyId, lobby);
+  
+  // Join socket room for the lobby
+  socket.join(newLobbyId);
+  
+  // Send lobby data to the player
+  socket.emit('lobby_joined', { lobby: filterLobbyData(lobby) });
+}
 
 module.exports = socketHandler;

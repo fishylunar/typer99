@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLobby } from '@/hooks/useLobby';
 import { getSocket } from '@/lib/socket';
@@ -16,6 +16,9 @@ function LobbyPageContent() {
   const gameMode = searchParams.get('mode') as GameMode || 'free-for-all';
   const aiDifficulty = searchParams.get('aiDifficulty') as AIDifficulty || 'medium';
   const wordlist = searchParams.get('wordlist') || 'standard';
+  
+  // Add a ref to track join attempts
+  const hasJoinedRef = useRef(false);
   
   // Fix: Change initial state to check if nickname is empty
   const [showNicknameDialog, setShowNicknameDialog] = useState(
@@ -44,29 +47,77 @@ function LobbyPageContent() {
     }
   }, [nickname, lobbyId, showNicknameDialog]);
   
+  // Add a state to track join status more explicitly
+  const [joinState, setJoinState] = useState<'idle' | 'joining' | 'joined' | 'error'>('idle');
+  
   // Handle nickname submission
   const handleNicknameSubmit = (newNickname: string) => {
     console.log("Nickname submitted:", newNickname);
     setNickname(newNickname);
     setShowNicknameDialog(false);
-    
-    // Fix: Join the lobby immediately after nickname is set
-    joinLobby({
-      nickname: newNickname,
-      lobbyId: lobbyId || undefined,
-      gameMode: lobbyId ? undefined : gameMode,
-      wordlist: wordlist
-    });
   };
   
-  // Join lobby when ready
+  // Join lobby when ready - with improved join state tracking
   useEffect(() => {
-    if (!nickname || showNicknameDialog) {
-      console.log("Not joining lobby yet:", { nickname, showDialog: showNicknameDialog });
+    if (!nickname || showNicknameDialog || joinState !== 'idle') {
+      console.log("Not joining lobby yet:", { 
+        nickname, 
+        showDialog: showNicknameDialog,
+        joinState
+      });
       return;
     }
     
     console.log("Joining lobby with:", { nickname, lobbyId, gameMode, aiDifficulty, wordlist });
+    
+    // Update state to prevent multiple join attempts
+    setJoinState('joining');
+    
+    joinLobby({
+      nickname,
+      lobbyId: lobbyId || undefined,
+      gameMode: lobbyId ? undefined : gameMode,
+      aiDifficulty: gameMode === 'practice' ? aiDifficulty : undefined,
+      wordlist: wordlist
+    });
+  }, [nickname, lobbyId, gameMode, aiDifficulty, wordlist, joinLobby, showNicknameDialog, joinState]);
+  
+  // Track successful join
+  useEffect(() => {
+    if (lobby && joinState === 'joining') {
+      setJoinState('joined');
+    }
+  }, [lobby, joinState]);
+  
+  // Reset join state on error
+  useEffect(() => {
+    if (error && joinState === 'joining') {
+      setJoinState('error');
+      
+      // Allow retrying after a short delay
+      const timer = setTimeout(() => {
+        setJoinState('idle');
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, joinState]);
+  
+  // Join lobby when ready - with fix for multiple join prevention
+  useEffect(() => {
+    if (!nickname || showNicknameDialog || hasJoinedRef.current) {
+      console.log("Not joining lobby yet:", { 
+        nickname, 
+        showDialog: showNicknameDialog,
+        hasJoined: hasJoinedRef.current 
+      });
+      return;
+    }
+    
+    console.log("Joining lobby with:", { nickname, lobbyId, gameMode, aiDifficulty, wordlist });
+    
+    // Mark that we've attempted to join
+    hasJoinedRef.current = true;
     
     joinLobby({
       nickname,
@@ -76,6 +127,16 @@ function LobbyPageContent() {
       wordlist: wordlist
     });
   }, [nickname, lobbyId, gameMode, aiDifficulty, wordlist, joinLobby, showNicknameDialog]);
+  
+  // Reset the join flag when disconnected
+  useEffect(() => {
+    // If there's an error or we're no longer connecting but don't have a lobby
+    // then we need to reset the join flag to allow another attempt
+    if ((error || (!isConnecting && !lobby)) && hasJoinedRef.current) {
+      console.log("Resetting join flag due to error or disconnect");
+      hasJoinedRef.current = false;
+    }
+  }, [error, isConnecting, lobby]);
   
   // Navigate to game when it starts
   useEffect(() => {
@@ -136,7 +197,8 @@ function LobbyPageContent() {
   const copyInviteLink = () => {
     if (!lobby) return;
     
-    const url = `${window.location.origin}/lobby?nickname=&lobbyId=${lobby.id}`;
+    const randomNumbers = Math.floor(1000 + Math.random() * 9000);
+    const url = `${window.location.origin}/lobby?nickname=Guest-${randomNumbers}&lobbyId=${lobby.id}`;
     navigator.clipboard.writeText(url).then(
       () => {
         setCopied(true);

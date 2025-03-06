@@ -46,6 +46,12 @@ export function useLobby() {
     const socket = getSocket();
     
     const handleLobbyJoined = ({ lobby }: { lobby: Lobby }) => {
+      // Clear any pending timeouts
+      if ((window as any).joinTimeoutId) {
+        clearTimeout((window as any).joinTimeoutId);
+        (window as any).joinTimeoutId = null;
+      }
+      
       setLobby(lobby);
       setIsConnecting(false);
       setCurrentPlayerId(socket.id);
@@ -86,6 +92,7 @@ export function useLobby() {
     };
     
     const handleError = ({ message }: { message: string }) => {
+      console.error("Lobby error:", message);
       setError(message);
       setIsConnecting(false);
     };
@@ -129,9 +136,37 @@ export function useLobby() {
   }, [currentPlayerId, getWordlists]);
   
   const joinLobby = useCallback((params: JoinLobbyParams) => {
-    setIsConnecting(true);
+    // Reset error state when attempting to join
     setError(null);
+    setIsConnecting(true);
+    
+    // Cancel any previous timeout
+    if ((window as any).joinTimeoutId) {
+      clearTimeout((window as any).joinTimeoutId);
+    }
+    
+    console.log("Emitting join_lobby event with params:", params);
     emitEvent('join_lobby', params);
+    
+    // Add a timeout to handle cases where the server doesn't respond
+    const timeoutId = setTimeout(() => {
+      setError("Connection timeout: Server did not respond");
+      setIsConnecting(false);
+    }, 10000); // 10 seconds timeout
+    
+    // Store the timeout ID so we can clear it when we get a response
+    (window as any).joinTimeoutId = timeoutId;
+    
+  }, []);
+  
+  // Add a cleanup function to clear any pending timeouts
+  useEffect(() => {
+    return () => {
+      if ((window as any).joinTimeoutId) {
+        clearTimeout((window as any).joinTimeoutId);
+        (window as any).joinTimeoutId = null;
+      }
+    };
   }, []);
   
   const startGame = useCallback(() => {
