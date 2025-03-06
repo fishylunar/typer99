@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getSocket, emitEvent } from '@/lib/socket';
 import { Game, Player, GameStats } from '@/types';

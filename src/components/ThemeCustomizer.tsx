@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '@/hooks/useTheme';
-import { Theme, ThemeColors } from '@/types';
+import { ThemeColors } from '@/types';
 
 interface ColorPickerProps {
   label: string;

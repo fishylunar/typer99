@@ -1,12 +1,12 @@
 'use client'
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useThemeContext } from '@/components/providers/ThemeProvider';
+// import { useThemeContext } from '@/components/providers/ThemeProvider';
 import { ThemeCustomizer } from '@/components/ThemeCustomizer';
 
 export const Header: React.FC = () => {
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
-  const { currentTheme } = useThemeContext();
+  // const { currentTheme } = useThemeContext();
 
   return (
     <header className="border-b border-border bg-card">

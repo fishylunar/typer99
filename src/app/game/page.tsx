@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useGame } from '@/hooks/useGame';
 import { useTyping } from '@/hooks/useTyping';
@@ -10,7 +12,7 @@ import { Countdown } from '@/components/Countdown';
 import { GameResults } from '@/components/GameResults';
 import Link from 'next/link';
 
-export default function GamePage() {
+function GamePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const lobbyId = searchParams.get('lobbyId');
@@ -93,10 +95,11 @@ export default function GamePage() {
           <h2 className="text-2xl font-bold mb-4">Waiting for game...</h2>
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <div className="mt-4 text-sm text-muted-foreground">
-            Game state: {gameState ? gameState.state || 'Unknown' : 'Not connected'}
+
+            Game state: {gameState ? ((gameState as any)?.state || 'Unknown') : 'Not connected'}
           </div>
           <div className="mt-2 text-sm text-muted-foreground">
-            {isGameStarting ? `Countdown: ${countdown}` : 'No countdown'}
+                  {isGameStarting ? `Countdown: ${countdown}` : 'No countdown'}
           </div>
           <div className="mt-4">
             <button 
@@ -207,5 +210,20 @@ export default function GamePage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function GamePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Loading Game...</h2>
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    }>
+      <GamePageContent />
+    </Suspense>
   );
 }

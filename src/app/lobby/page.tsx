@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLobby } from '@/hooks/useLobby';
 import { getSocket } from '@/lib/socket';
@@ -8,7 +8,7 @@ import { Player, GameMode, AIDifficulty } from '@/types';
 import { NicknameDialog } from '@/components/NicknameDialog';
 import Link from 'next/link';
 
-export default function LobbyPage() {
+function LobbyPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [nickname, setNickname] = useState<string | null>(searchParams.get('nickname'));
@@ -40,7 +40,7 @@ export default function LobbyPage() {
       console.log("Setting nickname dialog to true");
       setShowNicknameDialog(true);
     }
-  }, [nickname, lobbyId]);
+  }, [nickname, lobbyId, showNicknameDialog]);
   
   // Handle nickname submission
   const handleNicknameSubmit = (newNickname: string) => {
@@ -119,6 +119,7 @@ export default function LobbyPage() {
   }, [lobby, isHost, currentPlayerId]);
   
   // Add explicit debug button
+  /*
   const debugHostStatus = () => {
     console.log("Debug host status:", {
       lobby,
@@ -128,7 +129,7 @@ export default function LobbyPage() {
       allPlayers: lobby?.players
     });
   };
-  
+  */
   // Force check the host status
   const checkHostStatus = () => {
     const isActuallyHost = lobby && currentPlayerId === lobby.hostId;
@@ -305,6 +306,21 @@ export default function LobbyPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LobbyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Loading Lobby...</h2>
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    }>
+      <LobbyPageContent />
+    </Suspense>
   );
 }
 
