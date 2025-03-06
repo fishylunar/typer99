@@ -177,7 +177,7 @@ const server = <span class="cstat-no" title="statement not covered" >http.create
 // Configure CORS for development
 <span class="cstat-no" title="statement not covered" >app.use(cors({</span>
   origin: process.env.NODE_ENV === 'production' 
-    ? 'https://typer99.example.com' 
+    ? 'https://typer99.mewo.gay' 
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   methods: ['GET', 'POST'],
   credentials: true
@@ -192,7 +192,7 @@ const server = <span class="cstat-no" title="statement not covered" >http.create
 const io = <span class="cstat-no" title="statement not covered" >new Server(server, {</span>
   cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? 'https://typer99.example.com' 
+      ? 'https://typer99.mewo.gay' 
       : ['http://localhost:3000', 'http://127.0.0.1:3000'],
     methods: ['GET', 'POST'],
     credentials: true

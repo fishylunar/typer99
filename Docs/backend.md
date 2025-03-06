@@ -44,7 +44,7 @@ const server = http.createServer(app);
 // Configure CORS for development
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? 'https://typer99.example.com' 
+    ? 'https://typer99.mewo.gay' 
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   methods: ['GET', 'POST'],
   credentials: true
@@ -59,7 +59,7 @@ app.get('/health', (req, res) => {
 const io = new Server(server, {
   cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? 'https://typer99.example.com' 
+      ? 'https://typer99.mewo.gay' 
       : ['http://localhost:3000', 'http://127.0.0.1:3000'],
     methods: ['GET', 'POST'],
     credentials: true

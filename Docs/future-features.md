@@ -217,7 +217,7 @@ If you have an idea for a feature that's not listed here, we encourage you to su
 
 1. Create an issue on our GitHub repository with the "feature request" label
 2. Discuss your idea in our community Discord server
-3. Send an email to feedback@typer99.example.com
+3. Send an email to feedback@typer99.mewo.gay
 
 When submitting feature requests, please include:
 - A clear and concise description of the feature
