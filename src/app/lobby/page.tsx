@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLobby } from '@/hooks/useLobby';
 import { getSocket } from '@/lib/socket';
@@ -15,6 +15,10 @@ function LobbyPageContent() {
   const lobbyId = searchParams.get('lobbyId');
   const gameMode = searchParams.get('mode') as GameMode || 'free-for-all';
   const aiDifficulty = searchParams.get('aiDifficulty') as AIDifficulty || 'medium';
+  const wordlist = searchParams.get('wordlist') || 'standard';
+  
+  // Add a ref to track join attempts
+  const hasJoinedRef = useRef(false);
   
   // Fix: Change initial state to check if nickname is empty
   const [showNicknameDialog, setShowNicknameDialog] = useState(
@@ -28,7 +32,8 @@ function LobbyPageContent() {
     joinLobby,
     startGame,
     isHost,
-    currentPlayerId
+    currentPlayerId,
+    wordlists
   } = useLobby();
   
   const [copied, setCopied] = useState(false);
@@ -42,36 +47,96 @@ function LobbyPageContent() {
     }
   }, [nickname, lobbyId, showNicknameDialog]);
   
+  // Add a state to track join status more explicitly
+  const [joinState, setJoinState] = useState<'idle' | 'joining' | 'joined' | 'error'>('idle');
+  
   // Handle nickname submission
   const handleNicknameSubmit = (newNickname: string) => {
     console.log("Nickname submitted:", newNickname);
     setNickname(newNickname);
     setShowNicknameDialog(false);
-    
-    // Fix: Join the lobby immediately after nickname is set
-    joinLobby({
-      nickname: newNickname,
-      lobbyId: lobbyId || undefined,
-      gameMode: lobbyId ? undefined : gameMode
-    });
   };
   
-  // Join lobby when ready
+  // Join lobby when ready - with improved join state tracking
   useEffect(() => {
-    if (!nickname || showNicknameDialog) {
-      console.log("Not joining lobby yet:", { nickname, showDialog: showNicknameDialog });
+    if (!nickname || showNicknameDialog || joinState !== 'idle') {
+      console.log("Not joining lobby yet:", { 
+        nickname, 
+        showDialog: showNicknameDialog,
+        joinState
+      });
       return;
     }
     
-    console.log("Joining lobby with:", { nickname, lobbyId, gameMode, aiDifficulty });
+    console.log("Joining lobby with:", { nickname, lobbyId, gameMode, aiDifficulty, wordlist });
+    
+    // Update state to prevent multiple join attempts
+    setJoinState('joining');
     
     joinLobby({
       nickname,
       lobbyId: lobbyId || undefined,
       gameMode: lobbyId ? undefined : gameMode,
-      aiDifficulty: gameMode === 'practice' ? aiDifficulty : undefined
+      aiDifficulty: gameMode === 'practice' ? aiDifficulty : undefined,
+      wordlist: wordlist
     });
-  }, [nickname, lobbyId, gameMode, aiDifficulty, joinLobby, showNicknameDialog]);
+  }, [nickname, lobbyId, gameMode, aiDifficulty, wordlist, joinLobby, showNicknameDialog, joinState]);
+  
+  // Track successful join
+  useEffect(() => {
+    if (lobby && joinState === 'joining') {
+      setJoinState('joined');
+    }
+  }, [lobby, joinState]);
+  
+  // Reset join state on error
+  useEffect(() => {
+    if (error && joinState === 'joining') {
+      setJoinState('error');
+      
+      // Allow retrying after a short delay
+      const timer = setTimeout(() => {
+        setJoinState('idle');
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, joinState]);
+  
+  // Join lobby when ready - with fix for multiple join prevention
+  useEffect(() => {
+    if (!nickname || showNicknameDialog || hasJoinedRef.current) {
+      console.log("Not joining lobby yet:", { 
+        nickname, 
+        showDialog: showNicknameDialog,
+        hasJoined: hasJoinedRef.current 
+      });
+      return;
+    }
+    
+    console.log("Joining lobby with:", { nickname, lobbyId, gameMode, aiDifficulty, wordlist });
+    
+    // Mark that we've attempted to join
+    hasJoinedRef.current = true;
+    
+    joinLobby({
+      nickname,
+      lobbyId: lobbyId || undefined,
+      gameMode: lobbyId ? undefined : gameMode,
+      aiDifficulty: gameMode === 'practice' ? aiDifficulty : undefined,
+      wordlist: wordlist
+    });
+  }, [nickname, lobbyId, gameMode, aiDifficulty, wordlist, joinLobby, showNicknameDialog]);
+  
+  // Reset the join flag when disconnected
+  useEffect(() => {
+    // If there's an error or we're no longer connecting but don't have a lobby
+    // then we need to reset the join flag to allow another attempt
+    if ((error || (!isConnecting && !lobby)) && hasJoinedRef.current) {
+      console.log("Resetting join flag due to error or disconnect");
+      hasJoinedRef.current = false;
+    }
+  }, [error, isConnecting, lobby]);
   
   // Navigate to game when it starts
   useEffect(() => {
@@ -118,18 +183,6 @@ function LobbyPageContent() {
     }
   }, [lobby, isHost, currentPlayerId]);
   
-  // Add explicit debug button
-  /*
-  const debugHostStatus = () => {
-    console.log("Debug host status:", {
-      lobby,
-      isHost,
-      currentPlayerId,
-      hostId: lobby?.hostId,
-      allPlayers: lobby?.players
-    });
-  };
-  */
   // Force check the host status
   const checkHostStatus = () => {
     const isActuallyHost = lobby && currentPlayerId === lobby.hostId;
@@ -144,7 +197,8 @@ function LobbyPageContent() {
   const copyInviteLink = () => {
     if (!lobby) return;
     
-    const url = `${window.location.origin}/lobby?nickname=&lobbyId=${lobby.id}`;
+    const randomNumbers = Math.floor(1000 + Math.random() * 9000);
+    const url = `${window.location.origin}/lobby?nickname=Guest-${randomNumbers}&lobbyId=${lobby.id}`;
     navigator.clipboard.writeText(url).then(
       () => {
         setCopied(true);
@@ -178,6 +232,15 @@ function LobbyPageContent() {
     );
   }
   
+  // Get the wordlist display name and metadata
+  const currentWordlist = lobby.wordlist || 'standard';
+  const wordlistMeta = wordlists[currentWordlist] || { 
+    name: 'Standard', 
+    description: 'Default wordlist', 
+    nsfw: false,
+    eligibleForXP: true 
+  };
+  
   return (
     <main className="min-h-screen flex flex-col p-4 bg-background">
       {/* Fix: Make sure dialog is properly rendered with high z-index */}
@@ -196,12 +259,30 @@ function LobbyPageContent() {
               <span className="text-sm px-3 py-1 bg-accent/20 text-accent rounded-full">
                 {lobby.gameMode === '1v1' ? '1v1 Duel' : 
                  lobby.gameMode === 'free-for-all' ? 'Free for All' : 
+                 lobby.gameMode === 'practice' ? 'Practice' :
                  'Battle Royale'}
               </span>
               <span className="text-xs px-2 py-1 bg-neutral text-muted-foreground rounded">
                 {lobby.players.length}/{lobby.maxPlayers}
               </span>
             </div>
+          </div>
+          
+          {/* Display the selected wordlist */}
+          <div className="mb-4 p-3 rounded-lg bg-background border border-border">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-sm font-medium">Wordlist: </span>
+                <span className="text-sm">{wordlistMeta.name}</span>
+                {wordlistMeta.nsfw && (
+                  <span className="ml-2 text-xs px-1.5 py-0.5 bg-error/20 text-error rounded">NSFW</span>
+                )}
+                {!wordlistMeta.eligibleForXP && (
+                  <span className="ml-2 text-xs px-1.5 py-0.5 bg-warning/20 text-warning rounded">No XP</span>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{wordlistMeta.description}</p>
           </div>
           
           <div className="mb-6">
@@ -249,36 +330,6 @@ function LobbyPageContent() {
             </div>
           </div>
           
-          {/* Debug button - uncomment if needed */}
-          {/* <button
-            onClick={debugHostStatus}
-            className="mb-4 px-3 py-1 text-xs bg-neutral text-muted-foreground rounded-md"
-          >
-            Debug Host Status
-          </button> */}
-          
-          {/* Fix: Make sure the host check is clear and visible */}
-          <div className="mb-4 text-xs">
-            <p>Your ID: <span className="font-mono">{currentPlayerId?.substring(0, 8)}...</span></p>
-            <p>Host ID: <span className="font-mono">{lobby?.hostId?.substring(0, 8)}...</span></p>
-            <p>You are {isHost ? "the host" : "not the host"}</p>
-          </div>
-          
-          {/* Fix: Make the host condition more explicit */}
-          {isHost === true ? (
-            <button
-              onClick={startGame}
-              disabled={lobby.players.length < (lobby.gameMode === '1v1' ? 2 : 1)}
-              className="w-full py-3 bg-primary text-white rounded-md font-medium disabled:opacity-50 hover:bg-primary/90"
-            >
-              Start Game {lobby.gameMode === '1v1' && lobby.players.length < 2 ? "(Waiting for opponent)" : ""}
-            </button>
-          ) : (
-            <div className="text-center text-muted-foreground">
-              Waiting for host to start the game...
-            </div>
-          )}
-          
           {/* Debug buttons - useful for troubleshooting */}
           <div className="mb-4 px-4 py-2 bg-card rounded-lg border border-border text-xs">
             <button
@@ -303,6 +354,21 @@ function LobbyPageContent() {
               Force Start
             </button>
           </div>
+          
+          {/* Fix: Make the host condition more explicit */}
+          {isHost === true ? (
+            <button
+              onClick={startGame}
+              disabled={lobby.players.length < (lobby.gameMode === '1v1' ? 2 : 1)}
+              className="w-full py-3 bg-primary text-white rounded-md font-medium disabled:opacity-50 hover:bg-primary/90"
+            >
+              Start Game {lobby.gameMode === '1v1' && lobby.players.length < 2 ? "(Waiting for opponent)" : ""}
+            </button>
+          ) : (
+            <div className="text-center text-muted-foreground">
+              Waiting for host to start the game...
+            </div>
+          )}
         </div>
       </div>
     </main>

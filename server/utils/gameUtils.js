@@ -1,12 +1,17 @@
 const wordLists = require('../wordlists/wordlist');
 
 /**
- * Generates text for typing challenges based on game mode and player count
+ * Generates text for typing challenges based on game mode, player count, and wordlist
  */
-function generateText(gameMode, playerCount) {
-  const { easyWords, mediumWords, hardWords } = wordLists;
+function generateText(gameMode, playerCount, wordlist = 'standard') {
+  // Get the selected wordlist or default to standard
+  const selectedList = wordLists.wordlists[wordlist] || wordLists.wordlists.standard;
+  
   let words = [];
   let wordCount;
+  
+  // Extract word lists from the selected wordlist
+  const { easy: easyWords, medium: mediumWords, hard: hardWords } = selectedList.words;
   
   switch (gameMode) {
     case '1v1':
@@ -76,8 +81,24 @@ function calculateWPM(characterCount, timeInSeconds) {
   return Math.round((characterCount / averageWordLength) / minutes);
 }
 
+/**
+ * Get a list of available wordlists with their metadata
+ */
+function getAvailableWordlists() {
+  const availableLists = {};
+  
+  // Only return the metadata, not the actual words
+  Object.keys(wordLists.wordlists).forEach(key => {
+    const { name, description, nsfw, eligibleForXP } = wordLists.wordlists[key];
+    availableLists[key] = { name, description, nsfw, eligibleForXP };
+  });
+  
+  return availableLists;
+}
+
 module.exports = {
   generateText,
   getRandomWords,
-  calculateWPM
+  calculateWPM,
+  getAvailableWordlists
 };

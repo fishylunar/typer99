@@ -83,4 +83,33 @@ describe('Socket Handler', () => {
       gameMode: 'free-for-all'
     });
   });
+
+  // Add test for wordlists functionality
+  test('should return available wordlists', (done) => {
+    clientSocket.once('wordlists', (wordlists) => {
+      expect(wordlists).toHaveProperty('standard');
+      expect(wordlists.standard).toHaveProperty('name');
+      expect(wordlists.standard).toHaveProperty('description');
+      expect(wordlists.standard).toHaveProperty('nsfw');
+      expect(wordlists.standard).toHaveProperty('eligibleForXP');
+      done();
+    });
+    
+    clientSocket.emit('get_wordlists');
+  });
+  
+  // Test creating a lobby with specific wordlist
+  test('should create a lobby with custom wordlist', (done) => {
+    clientSocket.once('lobby_joined', (data) => {
+      expect(data).toHaveProperty('lobby');
+      expect(data.lobby.wordlist).toBe('furry');
+      done();
+    });
+    
+    clientSocket.emit('join_lobby', {
+      nickname: 'WordlistTester',
+      gameMode: 'free-for-all',
+      wordlist: 'furry'
+    });
+  });
 });

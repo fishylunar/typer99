@@ -21,6 +21,7 @@ export interface Player {
 export interface Lobby {
   id: string;
   gameMode: GameMode;
+  wordlist?: string; // Add wordlist property
   players: Player[];
   maxPlayers: number;
   gameStarted: boolean;
@@ -34,6 +35,7 @@ export interface Game {
   lobbyId: string;
   players: Player[];
   gameMode: GameMode;
+  wordlist?: string; // Add wordlist property
   text: string;
   startTime: number;
   endTime: number | null;
@@ -45,6 +47,7 @@ export interface GameStats {
   duration: number;
   mode: GameMode;
   textLength: number;
+  wordlist?: string; // Add wordlist to game stats
 }
 
 export interface LobbyJoinParams {
@@ -80,6 +83,10 @@ export interface SocketEvent {
   // Battle Royale events
   word_attack: (data: { attackerId: string, attackerName: string, wordCount: number }) => void;
   attack_sent: (data: { targetId: string, targetName: string }) => void;
+
+  // Wordlist events
+  get_wordlists: () => void;
+  wordlists: (wordlists: AvailableWordlists) => void;
 }
 
 // AI difficulty levels
@@ -122,4 +129,16 @@ export interface TypingState {
   completed: boolean;
   totalKeystrokes: number;  // Add this property
   mistypedWords: number; // Add mistyped words counter
+}
+
+// Wordlist types
+export interface WordlistMetadata {
+  name: string;
+  description: string;
+  nsfw: boolean;
+  eligibleForXP: boolean;
+}
+
+export interface AvailableWordlists {
+  [key: string]: WordlistMetadata;
 }

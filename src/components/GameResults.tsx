@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Player, GameStats } from '@/types';
+import { useRouter } from 'next/navigation';
+import { Player, GameStats, AvailableWordlists } from '@/types';
+import { getSocket } from '@/lib/socket';
 
 interface GameResultsProps {
   rankings: Player[];
@@ -13,6 +15,22 @@ export const GameResults: React.FC<GameResultsProps> = ({
   gameStats, 
   currentPlayerId 
 }) => {
+  const router = useRouter();
+  const [wordlistInfo, setWordlistInfo] = useState<{name: string, nsfw: boolean, eligibleForXP: boolean} | null>(null);
+  
+  // Get wordlist info if available
+  useEffect(() => {
+    if (gameStats?.wordlist) {
+      const socket = getSocket();
+      socket.emit('get_wordlists');
+      socket.once('wordlists', (wordlists: AvailableWordlists) => {
+        if (gameStats.wordlist && wordlists[gameStats.wordlist]) {
+          setWordlistInfo(wordlists[gameStats.wordlist]);
+        }
+      });
+    }
+  }, [gameStats?.wordlist]);
+
   // Find current player's rank
   const currentPlayer = rankings.find(p => p.id === currentPlayerId);
   const isWinner = currentPlayer?.rank === 1;
@@ -55,6 +73,14 @@ export const GameResults: React.FC<GameResultsProps> = ({
              gameStats?.mode === 'practice' ? 'Practice Mode' :
              'Battle Royale'} - {gameStats && formatTime(gameStats.duration)} 
           </p>
+          {/* Display wordlist info if available */}
+          {wordlistInfo && (
+            <p className="text-sm mt-2">
+              Wordlist: {wordlistInfo.name}
+              {wordlistInfo.nsfw && <span className="ml-2 text-xs px-1.5 py-0.5 bg-error/20 text-error rounded">NSFW</span>}
+              {!wordlistInfo.eligibleForXP && <span className="ml-2 text-xs px-1.5 py-0.5 bg-warning/20 text-warning rounded">No XP</span>}
+            </p>
+          )}
         </div>
         
         <div className="bg-card rounded-lg shadow-lg border border-border overflow-hidden">

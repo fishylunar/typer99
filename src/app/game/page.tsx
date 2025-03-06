@@ -10,6 +10,8 @@ import { TypingText } from '@/components/ui/TypingText';
 import { PlayerProgress } from '@/components/PlayerProgress';
 import { Countdown } from '@/components/Countdown';
 import { GameResults } from '@/components/GameResults';
+import { getSocket } from '@/lib/socket';
+import { AvailableWordlists } from '@/types';
 import Link from 'next/link';
 
 function GamePageContent() {
@@ -87,6 +89,30 @@ function GamePageContent() {
       completeGame(wpm, accuracy, timeInSeconds);
     }
   });
+
+  // Add state to fetch wordlist metadata
+  const [wordlistInfo, setWordlistInfo] = useState({
+    name: '',
+    nsfw: false,
+    eligibleForXP: true
+  });
+  
+  // Get wordlist info from game state
+  useEffect(() => {
+    if (gameState?.wordlist) {
+      // This would need to be fetched from the server or passed through the game state
+      const socket = getSocket();
+      socket.emit('get_wordlists');
+      socket.once('wordlists', (wordlists: AvailableWordlists) => {
+        const selectedWordlist = wordlists[gameState.wordlist || 'standard'] || {
+          name: 'Standard',
+          nsfw: false,
+          eligibleForXP: true
+        };
+        setWordlistInfo(selectedWordlist);
+      });
+    }
+  }, [gameState?.wordlist]);
   
   if (!gameState && !isGameStarting) {
     return (
@@ -152,6 +178,14 @@ function GamePageContent() {
                           "1v1 - Race to finish first!" : 
                           "Free for All - Race to finish!"}
                     </p>
+                    {/* Add wordlist name display */}
+                    {wordlistInfo.name && (
+                      <p className="text-xs mt-1">
+                        Wordlist: {wordlistInfo.name}
+                        {wordlistInfo.nsfw && <span className="text-error ml-1">(NSFW)</span>}
+                        {!wordlistInfo.eligibleForXP && <span className="text-warning ml-1">(No XP)</span>}
+                      </p>
+                    )}
                   </div>
                   
                   <div className="text-right">
