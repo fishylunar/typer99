@@ -2,7 +2,8 @@
 
 A battle royale typing game where speed and accuracy determine your fate. Race against other players to type the fastest and most accurately in this real-time multiplayer typing competition.
 
-![Typer-99 Screenshot](https://via.placeholder.com/800x400?text=Typer-99+Screenshot)
+![image](https://github.com/user-attachments/assets/1fb8d66b-738b-496c-9170-ca4977709313)
+
 
 ## Overview
 
