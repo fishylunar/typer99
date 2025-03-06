@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Theme, ThemeColors } from '@/types';
 
 // Default themes
@@ -78,7 +78,7 @@ export function useTheme() {
     return [];
   });
   
-  const allThemes = [...defaultThemes, ...customThemes];
+  const allThemes = useMemo(() => [...defaultThemes, ...customThemes], [customThemes]);
   
   // Save theme changes to localStorage
   useEffect(() => {

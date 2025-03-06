@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { emitEvent } from '@/lib/socket';
 import { GameMode, AIDifficulty } from '@/types';
 
 export default function HomePage() {

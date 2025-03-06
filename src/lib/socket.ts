@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import socketIOClient from 'socket.io-client';
 import { SocketEvent } from '@/types';
 

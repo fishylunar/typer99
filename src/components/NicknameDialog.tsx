@@ -22,7 +22,7 @@ export const NicknameDialog: React.FC<NicknameDialogProps> = ({ isOpen, onSubmit
       <div className="bg-card rounded-lg p-6 w-full max-w-md mx-4 shadow-xl border border-border">
         <h2 className="text-xl font-bold mb-4">Enter Your Nickname</h2>
         <p className="text-muted-foreground mb-4">
-          You're joining an existing lobby. Please enter a nickname to continue.
+          You&apos;re joining an existing lobby. Please enter a nickname to continue.
         </p>
         
         <form onSubmit={handleSubmit}>

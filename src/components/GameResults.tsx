@@ -123,6 +123,7 @@ export const GameResults: React.FC<GameResultsProps> = ({
               <Link 
                 href={`/lobby?nickname=${humanPlayer?.nickname || ''}&mode=practice&aiDifficulty=${
                   // Use a type assertion for the AI difficulty or provide a default
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   ((aiPlayer as any)?.difficulty || 'medium')
                 }`}
                 className="inline-block px-4 py-2 bg-primary text-white rounded-md mx-auto"

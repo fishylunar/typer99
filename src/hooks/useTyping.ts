@@ -22,7 +22,6 @@ export function useTyping({ text, onProgress, onComplete }: UseTypingProps) {
   });
   
   // References for tracking words and handling completion
-  const lastReportTimeRef = useRef<number>(0);
   const inputRef = useRef<HTMLDivElement | null>(null);
   const metricsRef = useRef({ wpm: 0, accuracy: 100 });
   const completionCallbackRef = useRef<boolean>(false);
@@ -175,11 +174,12 @@ export function useTyping({ text, onProgress, onComplete }: UseTypingProps) {
       inputRef.current.focus();
       
       // Add click handler to refocus
-      const handleClick = () => inputRef.current?.focus();
-      inputRef.current.addEventListener('click', handleClick);
+      const currentRef = inputRef.current; // Store ref value in a variable
+      const handleClick = () => currentRef?.focus();
+      currentRef.addEventListener('click', handleClick);
       
       return () => {
-        inputRef.current?.removeEventListener('click', handleClick);
+        currentRef?.removeEventListener('click', handleClick);
       };
     }
   }, []);
@@ -216,7 +216,7 @@ export function useTyping({ text, onProgress, onComplete }: UseTypingProps) {
     }, 500);
     
     return () => clearInterval(updateInterval);
-  }, [state.completed, state.startTime, calculateMetrics, state.correctChars, state.totalChars, onProgress]);
+  }, [state.completed, state.startTime, calculateMetrics, state.correctChars, state.totalChars, onProgress, state.wpm, state.accuracy]);
   
   // Handle completion separately to avoid loops
   useEffect(() => {
