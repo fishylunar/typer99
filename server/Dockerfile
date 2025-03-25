@@ -2,7 +2,7 @@ FROM node:20-alpine AS base
 
 COPY package*.json ./
 
-RUN npm ci
+RUN npm install
 
 EXPOSE 3004
 
