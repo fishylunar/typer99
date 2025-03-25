@@ -8,4 +8,4 @@ RUN cd server && npm ci
 
 EXPOSE 3004
 
-CMD ["sh", "-c", "node server/index.js"]
+CMD ["sh", "-c", "node index.js"]
