@@ -8,4 +8,4 @@ RUN npm ci
 
 EXPOSE 3004
 
-CMD ["sh", "-c", "node index.js"]
+CMD ["sh", "-c", "npm start"]
