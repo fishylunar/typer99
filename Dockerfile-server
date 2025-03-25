@@ -1,6 +1,6 @@
 FROM node:20-alpine AS base
 
-WORKDIR /
+WORKDIR /app
 
 COPY server/package*.json ./server/
 
@@ -8,4 +8,4 @@ RUN cd server && npm ci
 
 EXPOSE 3004
 
-CMD ["sh", "-c", "node index.js"]
+CMD ["sh", "-c", "node ./server/index.js"]
