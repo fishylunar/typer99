@@ -1,0 +1,11 @@
+FROM node:20-alpine AS base
+
+WORKDIR /server
+
+COPY package*.json ./
+
+RUN npm ci
+
+EXPOSE 3004
+
+CMD ["sh", "-c", "node index.js"]
