@@ -11,8 +11,6 @@ services:
     ports:
       - "3003:3003"  # Frontend
       - "3004:3004"  # Backend socket server
-    networks:
-      - traefik
     labels:
       # Common Traefik configuration
       - "traefik.enable=true"
@@ -32,8 +30,3 @@ services:
       - "traefik.http.routers.typer99-api.tls.certresolver=default"
       - "traefik.http.routers.typer99-api.service=typer99-api-service"
       - "traefik.http.services.typer99-api-service.loadbalancer.server.port=3004"
-
-networks:
-  traefik:
-    name: traefik
-    external: true
