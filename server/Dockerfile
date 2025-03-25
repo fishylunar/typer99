@@ -10,4 +10,4 @@ COPY . .
 
 EXPOSE 3004
 
-CMD ["sh", "-c", "ls & npm start"]
+CMD ["sh", "-c", "npm start"]
